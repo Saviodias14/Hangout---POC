@@ -31,20 +31,57 @@ export async function postPlaces(name: string, capacity: number, expedient: stri
 }
 
 export async function updatePlace(body: (Omit<Place, "location">), id: number) {
-    
-    const locationId = await connection.query<LocationId>(`
-    UPDATE place
-    SET name = $1, capacity = $2, expedient = $3
-    WHERE id =$4 
-    RETURNING place."locationId"`, [body.name, body.capacity, body.expedient, id])
+    let counter:number = 1
+    const array: (string|number)[] = []
+    let query:string = "UPDATE place SET "
+    if(body.name){
+        query = query + `name = $${counter} `
+        counter++
+        array.push(body.name)
+    }
+    if(body.capacity){
+        query = query + `capacity = $${counter} `
+        counter++
+        array.push(body.capacity)
+    }
+    if(body.expedient){
+        query = query + `expedient = $${counter} `
+        counter++
+        array.push(body.expedient)
+    }
+    query = query + `WHERE id =$${counter} 
+    RETURNING place."locationId"`
+    if(counter===1){
+        query = `SELECT place."locationId" FROM place WHERE id = $${counter}`
+    }
+    console.log(query)
+    array.push(id)
+    const locationId = await connection.query<LocationId>(query, array)
     return locationId.rows[0]
 }
 
 export async function updateLocation(body: (Omit<Place, "location">), locationId: number) {
-    await connection.query(`
-    UPDATE location
-    SET cep = $1, number = $2
-    WHERE id =$3`, [body.cep, body.number, locationId])
+
+    let counter:number = 1
+    const array: (string|number)[] = []
+    let query:string = "UPDATE location SET "
+    if(body.cep){
+        query = query + `cep = $${counter} `
+        counter++
+        array.push(body.cep)
+    }
+    if(body.number){
+        query = query + `number = $${counter} `
+        counter++
+        array.push(body.number)
+    }
+    if(counter===1){
+        return
+    }
+    query = query + `WHERE id =$${counter}`
+    console.log(query)
+    array.push(locationId)
+    await connection.query(query, array)
 }
 
 export async function deletePlace(id:number){
